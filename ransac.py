@@ -1,6 +1,8 @@
 from models import Model, Poly2DModel
 import numpy as np
 
+import unittest
+
 
 class Ransac:
     def __init__(self, rank: int, points: list, outliers_ratio: float, m: Poly2DModel, separate=False):
@@ -59,7 +61,7 @@ class Ransac:
         # 1. return best_inliers
         # 2. sample_points for iteration
         # 3. inliers found in current iteration
-        return self.inliers , [x_s, y_s], [inliers_x, inliers_y]
+        return self.inliers, [x_s, y_s], [inliers_x, inliers_y]
 
     def solve(self):
         expected_inliers_ratio = 1 - self.outliers_ratio_
@@ -87,11 +89,22 @@ class Ransac:
             self.current_iteration += 1
 
 
-rn = Ransac(rank=2, points=[[1, 1.2, 1.1, 1.5], [1.1, 1.2, 2.4, 1.7]], outliers_ratio=0.3, m=Poly2DModel(),
-            separate=True)
-rn.max_iterations = 100
-rn.tolerance = 0.5
-solution = rn.solve()
-z = np.polyfit(solution[0], solution[1], 1) # line
-p = np.poly1d(z)
-print(p)
+class TestRANSACMethod(unittest.TestCase):
+    def setUp(self):
+        x_s = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+        y_s = [1.1, 1.2, 2.4, 1.7, 1.3, 1.6, 1.6, 1.8, 2.0, 2.1, 3.0]
+        self.rn = Ransac(rank=2, points=[x_s, y_s], outliers_ratio=0.3, m=Poly2DModel(), separate=True)
+
+        self.rn.tolerance = 0.4
+        self.rn.max_iterations = 100
+
+    def testSolve(self):
+        solution = self.rn.solve()
+        z = np.polyfit(solution[0], solution[1], 1)  # line
+        p = np.poly1d(z)
+        self.assertAlmostEqual(z[0], 1.0, delta = 0.1)
+        self.assertAlmostEqual(z[1], 0.0, delta = 0.1)
+
+
+if __name__ == '__main__':
+    unittest.main()
