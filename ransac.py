@@ -1,6 +1,7 @@
 from models import Model, Poly2DModel
-import numpy as np
+from math import log10
 
+import numpy as np
 import unittest
 
 
@@ -28,6 +29,11 @@ class Ransac:
     def tolerance(self, value):
         self.tolerance_ = value
         self.model_.tolerance = value
+
+    def iterations_need(self, confidence_p=0.95):
+        w = expected_inliers_ratio = 1 - self.outliers_ratio_
+        k = log10(1 - confidence_p) / log10(1 - w ** self.sampleSize_)
+        return k
 
     def __iter__(self):
         return self
@@ -63,14 +69,16 @@ class Ransac:
         # 3. inliers found in current iteration
         return self.inliers, [x_s, y_s], [inliers_x, inliers_y]
 
-    def solve(self):
+    def solve(self, confidence=0.99):
         expected_inliers_ratio = 1 - self.outliers_ratio_
         self.current_iteration = 1
+        min_iterations = self.iterations_need(confidence)
 
         while True:
             inliers_ratio = len(self.inliers[0]) / self.dataSize_
 
-            if inliers_ratio > expected_inliers_ratio or self.current_iteration > self.max_iterations:
+            if (inliers_ratio > expected_inliers_ratio or self.current_iteration > self.max_iterations) and (
+                        self.current_iteration > min_iterations):
                 return self.inliers
 
             indexes = np.random.randint(self.dataSize_, size=self.sampleSize_)
@@ -102,8 +110,8 @@ class TestRANSACMethod(unittest.TestCase):
         solution = self.rn.solve()
         z = np.polyfit(solution[0], solution[1], 1)  # line
         p = np.poly1d(z)
-        self.assertAlmostEqual(z[0], 1.0, delta = 0.1)
-        self.assertAlmostEqual(z[1], 0.0, delta = 0.1)
+        self.assertAlmostEqual(z[0], 1.0, delta=0.1)
+        self.assertAlmostEqual(z[1], 0.0, delta=0.1)
 
 
 if __name__ == '__main__':
