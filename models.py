@@ -3,8 +3,6 @@ import numpy as np
 import warnings
 import unittest
 
-warnings.simplefilter('ignore', np.RankWarning)
-
 
 class Model:
     def __init__(self, *args):
@@ -57,6 +55,8 @@ class Poly2DModel(Model):
             x, y = zip(points[0], points[1])
         else:
             x, y = points[0], points[1]
+
+        warnings.simplefilter('ignore', np.RankWarning)
         self.coefficients_ = np.polyfit(x, y, self.rank_)
         self.model_ = np.poly1d(self.coefficients_)
 
